@@ -13,23 +13,26 @@ import {
   FormControl,
   InputLabel,
   Pagination,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
 } from "@mui/material";
 import useDebounce from "./useDebounce";
+import SortDialog from "./SortDialog";
+import AddContactDialog from "./AddContactDialog";
+import { IconButton } from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit"
 
-const ContactTable = ({ onAdd }) => {
+const ContactTable = () => {
   const [contacts, setContacts] = useState([]);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState({ field: "createdAt", order: "desc" }); // Default to createdAt and desc
+  const [sort, setSort] = useState({ field: "createdAt", order: "desc" });
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
   const [openSortDialog, setOpenSortDialog] = useState(false);
   const [selectedSortField, setSelectedSortField] = useState("createdAt");
   const [selectedOrder, setSelectedOrder] = useState("desc");
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
   const debouncedSearch = useDebounce(search, 300);
 
   const fetchContacts = async () => {
@@ -66,20 +69,16 @@ const ContactTable = ({ onAdd }) => {
   const handleSort = () => {
     setSort({ field: selectedSortField, order: selectedOrder });
     setOpenSortDialog(false);
-    setPage(1); // Reset to the first page when sort changes
+    setPage(1);
   };
 
-  const handlePageChange = (_, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleRowsPerPageChange = (e) => {
-    setRowsPerPage(e.target.value);
-    setPage(1); // Reset to the first page when rows per page changes
+  const handleEdit = (contact) => {
+    setSelectedContact(contact);
+    setOpenEditDialog(true);
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 h-screen">
       <div className="mb-4 flex justify-between gap-4 items-center">
         <TextField
           placeholder="Search..."
@@ -89,120 +88,113 @@ const ContactTable = ({ onAdd }) => {
           size="small"
         />
         <div className="flex gap-4">
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => setOpenSortDialog(true)}
-          size="small"
-        >
-          Sort By
-        </Button>
-        <FormControl>
-          <InputLabel id="rows-per-page-label">Rows per page</InputLabel>
-          <Select
-            value={rowsPerPage}
-            onChange={handleRowsPerPageChange}
-            style={{ width: 120 }}
-            label="Rows per page"
-            labelId="rows-per-page-label"
-            size="small"
+          <Button variant="contained" color="primary" onClick={() => setOpenSortDialog(true)} size="small">
+            Sort By
+          </Button>
+          <FormControl>
+            <InputLabel id="rows-per-page-label">Rows per page</InputLabel>
+            <Select
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(e.target.value)}
+              style={{ width: 120 }}
+              label="Rows per page"
+              labelId="rows-per-page-label"
+              size="small"
+            >
+              {[5, 10, 20, 50].map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setOpenEditDialog(true)}
           >
-            {[5, 10, 20, 50].map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <Button variant="contained" color="primary" onClick={onAdd}>
-          Add Contact
-        </Button>
+            Add Contact
+          </Button>
         </div>
       </div>
-
-      <div style={{ overflowX: "auto" }}>
+      <div className="h-[85%] overflow-x-scroll">
         <Table>
           <TableHead>
             <TableRow>
-              {["First Name", "Last Name", "Email", "Phone", "Company", "Job Title", "Actions"].map((header) => (
-                <TableCell key={header}>
-                  {header}
+              {[
+                { label: "First Name", width: "15%" },
+                { label: "Last Name", width: "15%" },
+                { label: "Email", width: "25%" },
+                { label: "Phone", width: "15%" },
+                { label: "Company", width: "15%" },
+                { label: "Job Title", width: "10%" },
+                { label: "Actions", width: "5%" },
+              ].map((header) => (
+                <TableCell
+                  key={header.label}
+                  sx={{ width: header.width, fontWeight: "bold" }}
+                >
+                  {header.label}
                 </TableCell>
               ))}
             </TableRow>
           </TableHead>
-          <TableBody>
+          <TableBody className="overflow-x-scroll h-full">
             {contacts.map((contact) => (
               <TableRow key={contact._id}>
-                <TableCell>{contact.firstName}</TableCell>
-                <TableCell>{contact.lastName}</TableCell>
-                <TableCell>{contact.email}</TableCell>
-                <TableCell>{contact.phone}</TableCell>
-                <TableCell>{contact.company}</TableCell>
-                <TableCell>{contact.jobTitle}</TableCell>
-                <TableCell>
-                  <Button color="secondary" onClick={() => handleDelete(contact._id)}>
-                    Delete
-                  </Button>
+                <TableCell sx={{ width: "15%" }}>{contact.firstName}</TableCell>
+                <TableCell sx={{ width: "15%" }}>{contact.lastName}</TableCell>
+                <TableCell sx={{ width: "25%" }}>{contact.email}</TableCell>
+                <TableCell sx={{ width: "15%" }}>{contact.phone}</TableCell>
+                <TableCell sx={{ width: "15%" }}>{contact.company}</TableCell>
+                <TableCell sx={{ width: "10%" }}>{contact.jobTitle}</TableCell>
+                <TableCell sx={{ width: "5%" }}>
+                  <div className="flex">
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDelete(contact._id)}
+                    aria-label="delete"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleEdit(contact)}
+                    aria-label="edit"
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
-
       <div className="mt-4 flex justify-center">
         <Pagination
           count={totalPages}
           page={page}
-          onChange={handlePageChange}
+          onChange={(_, newPage) => setPage(newPage)}
           color="primary"
         />
       </div>
-
-      {/* Sort Dialog */}
-      <Dialog open={openSortDialog} onClose={() => setOpenSortDialog(false)}>
-        <DialogTitle>Sort Contacts</DialogTitle>
-        <DialogContent>
-          <div className="mt-4">
-            <FormControl fullWidth>
-              <InputLabel id="sort2" >Sort By</InputLabel>
-              <Select
-                value={selectedSortField}
-                onChange={(e) => setSelectedSortField(e.target.value)}
-                labelId="sort2"
-                label="Sort By"
-              >
-                {["createdAt", "firstName", "lastName", "email", "phone", "company", "jobTitle"].map((field) => (
-                  <MenuItem key={field} value={field}>
-                    {field.charAt(0).toUpperCase() + field.slice(1)}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl fullWidth style={{ marginTop: "16px" }}>
-              <InputLabel id="order">Order</InputLabel>
-              <Select
-                value={selectedOrder}
-                onChange={(e) => setSelectedOrder(e.target.value)}
-                labelId="order"
-                label="Order"
-              >
-                <MenuItem value="asc">Ascending</MenuItem>
-                <MenuItem value="desc">Descending</MenuItem>
-              </Select>
-            </FormControl>
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenSortDialog(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleSort} color="primary">
-            Apply Sort
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <SortDialog
+        open={openSortDialog}
+        onClose={() => setOpenSortDialog(false)}
+        onApply={handleSort}
+        selectedSortField={selectedSortField}
+        setSelectedSortField={setSelectedSortField}
+        selectedOrder={selectedOrder}
+        setSelectedOrder={setSelectedOrder}
+      />
+      
+      <AddContactDialog
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        onRefresh={fetchContacts}
+        initialData={selectedContact}
+      />
     </div>
   );
 };

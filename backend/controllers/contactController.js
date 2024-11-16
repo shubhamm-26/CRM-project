@@ -51,8 +51,12 @@ exports.getContacts = async (req, res) => {
 
 exports.updateContact = async (req, res) => {
     const updatedContact = req.body;
-    try {    
-        res.send(contact);
+    try {
+        const contact = await Contact.findByIdAndUpdate(req.params.id, updatedContact, { new: true });
+        if (!contact) {
+            return res.status(404).send();
+        }
+        return res.status(200).send(contact);
     } catch (error) {
         res.status(400).send(error);
     }
@@ -83,22 +87,4 @@ exports.getContact = async (req, res) => {
         res.status(500).send(error);
     }
 }
-
-// exports.searchContacts = async (req, res) => {
-//     try {
-//       const { q, page, limit, sort, order } = req.query;
-//       const searchQuery = q ? { $text: { $search: q } } : {};
-  
-//       const contacts = await Contact.find(searchQuery)
-//         .sort({ [sort || "createdAt"]: order === "desc" ? -1 : 1 })
-//         .limit(parseInt(limit) || 10)
-//         .skip((parseInt(page) - 1) * parseInt(limit));
-  
-//       const total = await Contact.countDocuments(searchQuery);
-  
-//       res.status(200).send({ contacts, pages: Math.ceil(total / limit) });
-//     } catch (error) {
-//       res.status(500).send({ error: "Error fetching contacts" });
-//     }
-//   };
   
